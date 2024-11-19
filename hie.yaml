@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "glados:lib"
+    - path: "./lisp"
+      component: "glados:exe:lisp-exe"
+    - path: "./lisp-test"
+      component: "glados:test:lisp-test"

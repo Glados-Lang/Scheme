@@ -2,4 +2,4 @@
 *~
 .direnv
 .vscode/
-!.vscode/settings.json
+result
