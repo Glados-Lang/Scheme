@@ -11,6 +11,13 @@
       let
         pkgs = import nixpkgs { inherit system; };
         haskellPackages = pkgs.haskell.packages.ghc966;
+        
+        commitHook = pkgs.writeShellScript "commit-msg" (builtins.readFile ./scripts/hook-commit.sh);
+
+        setupGitHooks = pkgs.writeShellScript "setup-git-hooks" ''
+          ln -sf ${commitHook} .git/hooks/commit-msg
+          chmod +x .git/hooks/commit-msg
+        '';
       in
       {
         devShell = pkgs.mkShell {
@@ -21,6 +28,9 @@
             haskellPackages.stack
             haskellPackages.haskell-language-server
           ];
+          shellHook = ''
+            ${setupGitHooks}
+          '';
         };
 
         packages.default = haskellPackages.callCabal2nix "glados" ./. {};
