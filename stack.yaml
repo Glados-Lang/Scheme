@@ -74,11 +74,4 @@ extra-deps:
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
 
-
-nix:
-  enable: true
-  pure: false
-  packages: [zlib]
-
-system-ghc: true
-install-ghc: false
+notify-if-nix-on-path: false

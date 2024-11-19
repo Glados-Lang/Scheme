@@ -3,3 +3,5 @@
 .direnv
 .vscode/
 result
+result-*
+.envrc
