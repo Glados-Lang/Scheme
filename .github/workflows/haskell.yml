@@ -1,4 +1,4 @@
-name: Glad to see you again CI/CD
+name: GLaDOS CI/CD
 
 on:
   push:
@@ -14,27 +14,21 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Install basic tools
+    - name: Install tools
       run: |
         sudo apt-get update
-        sudo apt-get install -y make ghc cabal-install
-        cabal update
-        
-    - name: Cache Cabal packages
+        sudo apt-get install -y make curl
+        curl -sSL https://get.haskellstack.org/ | sh
+
+    - name: Cache Stack packages
       uses: actions/cache@v3
       with:
         path: |
-          ~/.cabal/packages
-          ~/.cabal/store
-          dist-newstyle
-        key: ${{ runner.os }}-cabal-${{ hashFiles('**/*.cabal') }}
+          ~/.stack
+          .stack-work
+        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml', 'package.yaml') }}
         restore-keys: |
-          ${{ runner.os }}-cabal-
-
-    - name: Install dependencies
-      run: |
-        cabal update
-        cabal build --only-dependencies --enable-tests
+          ${{ runner.os }}-stack-
 
     - name: Build project
       run: make
@@ -42,10 +36,10 @@ jobs:
     - name: Run tests
       run: make tests_run
       
-    - name: Check style and formatting
+    - name: Check style
       run: |
-        cabal install hlint
-        ~/.cabal/bin/hlint .
+        stack install hlint
+        ~/.local/bin/hlint .
 
     - name: Run functional tests
       run: |
@@ -69,8 +63,8 @@ jobs:
     - name: Install tools
       run: |
         sudo apt-get update
-        sudo apt-get install -y make ghc cabal-install
-        cabal update
+        sudo apt-get install -y make curl
+        curl -sSL https://get.haskellstack.org/ | sh
 
     - name: Build Release
       run: |
