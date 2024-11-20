@@ -1,8 +1,8 @@
-name: Glados CI/CD
+name: Glad to see you again CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main ]
 
@@ -14,10 +14,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Install GHC and Cabal
+    - name: Install basic tools
       run: |
         sudo apt-get update
-        sudo apt-get install -y ghc cabal-install
+        sudo apt-get install -y make ghc cabal-install
         cabal update
         
     - name: Cache Cabal packages
@@ -44,20 +44,14 @@ jobs:
       
     - name: Check style and formatting
       run: |
-        # Install hlint manually
         cabal install hlint
         ~/.cabal/bin/hlint .
 
     - name: Run functional tests
       run: |
-        # Basic functionality test
         echo "(define x 42)" > test.scm
         ./glados < test.scm | grep "42"
-        
-        # Error handling test
         ./glados < nonexistent.file; test $? -eq 84
-        
-        # Check compilation rules
         make re
         make clean
         make fclean
@@ -72,10 +66,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install GHC and Cabal
+    - name: Install tools
       run: |
         sudo apt-get update
-        sudo apt-get install -y ghc cabal-install
+        sudo apt-get install -y make ghc cabal-install
         cabal update
 
     - name: Build Release
