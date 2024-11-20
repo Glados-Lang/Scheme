@@ -18,6 +18,7 @@ re: fclean all
 
 install:
 	./scripts/install-hook.sh
+	./scripts/install_ghcup.sh
 	./scripts/config_ghcup.sh
 
 .PHONY: all clean fclean re
