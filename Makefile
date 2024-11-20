@@ -9,10 +9,10 @@ all:
 	stack build
 
 clean:
-	rm -f *~
-	rm -f #*#
+	stack clean
 
-fclean: clean
+fclean:
+	stack clean --full
 
 re: fclean all
 
