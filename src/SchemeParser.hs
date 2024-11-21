@@ -1,15 +1,30 @@
+--- To enable parsing using Data.Text instead of String
 {-# LANGUAGE OverloadedStrings #-}
+-- suggestion from hlint
 {-# LANGUAGE StrictData #-}
 
-module SchemeParser where
+module SchemeParser
+  ( Expr (..),
+    parseExpr,
+    sc,
+    boolean,
+    call,
+    define,
+    ifExpr,
+    lambda,
+    list,
+    number,
+    symbolExpr,
+  )
+where
 
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Void (Void)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
--- Define AST types
 data Expr
   = Number Integer
   | Bool Bool
@@ -21,45 +36,69 @@ data Expr
   | Call Expr [Expr]
   deriving (Show, Eq)
 
+-- | Parser type alias
+-- | `Void` is used for the error component could be changed in the future
+-- | `Text` is the input stream type
 type Parser = Parsec Void Text
 
--- | Helper: Skipping spaces and comments
+-- | space consumer (skip whitespace and comments)
 sc :: Parser ()
 sc = L.space space1 (L.skipLineComment ";") empty
 
--- | Helper: Parsing surrounded by parentheses
+-- | paretheses parser, parse the content between the parens
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
--- | Helper: Symbol parser
+-- | symbol parser
 symbol :: Text -> Parser Text
 symbol = L.symbol sc
 
--- | Parser for identifiers (symbols)
-identifier :: Parser String
-identifier = lexeme ((:) <$> letterChar <*> many (alphaNumChar <|> oneOf ("?!+-*/<=>:$%^&_~@" :: String)))
+-- | special characters supported in indentifiers
+specialChars :: String
+specialChars = "?!+-*/<=>:$%^&_~@"
 
--- | Helper: Lexeme parser
+-- | identifier parser
+-- | reference: https://www.scheme.com/tspl4/intro.html#./intro:h1 (second paragraph)
+identifier :: Parser String
+identifier = lexeme $ do
+  first <-
+    try (T.unpack <$> chunk "...")
+      <|> try (T.unpack <$> chunk "->")
+      <|> try (T.unpack <$> chunk "+")
+      <|> try (T.unpack <$> chunk "-")
+      <|> fmap (: []) (letterChar <|> oneOf (filter (`notElem` ("+-.@0123456789" :: String)) specialChars))
+  case first of
+    "..." -> return "..."
+    "->" -> do
+      rest <- many (alphaNumChar <|> oneOf specialChars)
+      return ("->" ++ rest)
+    "+" -> return "+"
+    "-" -> return "-"
+    x -> do
+      rest <- many (alphaNumChar <|> oneOf specialChars)
+      return (x ++ rest)
+
+-- | helper function to parse space speparated parsers
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
 
--- | Parser for numbers
+-- | number parser
 number :: Parser Expr
-number = Number <$> lexeme L.decimal
+number = Number <$> lexeme (L.signed sc L.decimal)
 
--- | Parser for booleans
+-- | bool parser
 boolean :: Parser Expr
 boolean = lexeme $ (Bool True <$ string "#t") <|> (Bool False <$ string "#f")
 
--- | Parser for symbols (variable names or function calls)
+-- | symbol expressions parsing
 symbolExpr :: Parser Expr
 symbolExpr = Symbol <$> identifier
 
--- | Parser for a Scheme list
+-- | `list` expressions parsing
 list :: Parser Expr
 list = List <$> parens (many expr)
 
--- | Parser for `define`
+-- | `define` expressions parsing
 define :: Parser Expr
 define = parens $ do
   _ <- symbol "define"
@@ -75,7 +114,7 @@ define = parens $ do
         return $ Define name value
     ]
 
--- | Parser for `lambda`
+-- | `lambda` expressions parsing
 lambda :: Parser Expr
 lambda = parens $ do
   _ <- symbol "lambda"
@@ -83,7 +122,7 @@ lambda = parens $ do
   body <- expr
   return $ Lambda params body
 
--- | Parser for `if`
+-- | `if` expressions parsing
 ifExpr :: Parser Expr
 ifExpr = parens $ do
   _ <- symbol "if"
@@ -92,27 +131,26 @@ ifExpr = parens $ do
   elseExpr <- expr
   return $ If cond thenExpr elseExpr
 
--- | Parser for function calls
+-- | Function calls
 call :: Parser Expr
 call = parens $ do
-  func <- expr -- Function being called
-  args <- many expr -- Arguments
+  func <- expr
+  args <- many expr
   return $ Call func args
 
--- | Main expression parser
 expr :: Parser Expr
 expr =
   choice
-    [ try define, -- Define must precede others
-      try lambda, -- Lambda is a special form
-      try ifExpr, -- If expressions
-      try call, -- Generic function calls
-      try list, -- Parse lists
-      number, -- Parse numbers
-      boolean, -- Parse booleans
-      symbolExpr -- Variable or function names
+    [ try define,
+      try lambda,
+      try ifExpr,
+      try call,
+      try list,
+      number,
+      boolean,
+      symbolExpr
     ]
 
--- | Top-level parser with spaces handled
+-- | Parse a Scheme expression
 parseExpr :: Text -> Either (ParseErrorBundle Text Void) Expr
 parseExpr = runParser (sc *> expr <* eof) ""
