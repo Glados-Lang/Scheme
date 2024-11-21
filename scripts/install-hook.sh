@@ -7,4 +7,4 @@ ln -s "$SCRIPT_DIR/hook-commit.sh" "$HOOKS_DIR"/commit-msg
 
 chmod +x "$HOOKS_DIR"/commit-msg
 
-echo "Git hooks installed successfully."
+echo -e "\033[92mGit hooks installed successfully.\033[0m"

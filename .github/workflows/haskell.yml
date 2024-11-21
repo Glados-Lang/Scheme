@@ -1,0 +1,97 @@
+name: GLaDOS CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y make curl
+        curl -sSL https://get.haskellstack.org/ | sh
+
+    - name: Cache Stack packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.stack
+          .stack-work
+        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml', 'package.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-stack-
+
+    - name: Build project
+      run: make
+      
+    - name: Run tests
+      run: make tests_run
+      
+    - name: Check style
+      run: |
+        stack install hlint
+        ~/.local/bin/hlint .
+
+    - name: Run functional tests
+      run: |
+        echo "(define x 42)" > test.scm
+        ./glados < test.scm | grep "42"
+        ./glados < nonexistent.file; test $? -eq 84
+        make re
+        make clean
+        make fclean
+        make
+
+  release:
+    name: Create Release
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y make curl
+        curl -sSL https://get.haskellstack.org/ | sh
+
+    - name: Build Release
+      run: |
+        make
+        mkdir -p dist
+        cp glados dist/
+        cd dist
+        tar czf glados.tar.gz glados
+        cd ..
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Release v${{ github.run_number }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/glados.tar.gz
+        asset_name: glados.tar.gz
+        asset_content_type: application/gzip
