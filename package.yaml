@@ -21,6 +21,7 @@ description:         Please see the README on GitHub at <https://github.com/Epit
 dependencies:
 - base >= 4.7 && < 5
 - megaparsec
+- text
 
 ghc-options:
 - -Wall
@@ -48,6 +49,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - glados
+    - text
 
 
 tests:
@@ -60,3 +62,7 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - glados
+    - QuickCheck
+    - hspec
+    - megaparsec
+    - text
