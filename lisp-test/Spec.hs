@@ -79,10 +79,23 @@ main = hspec $ do
                     (Call (Symbol "+") [Symbol "x", Symbol "y"])
                 )
             )
+        runParser define "" "(define (f x) (if (> x 0) x (- x)))"
+          `shouldBe` Right
+            ( Define
+                "f"
+                ( Lambda
+                    ["x"]
+                    ( If
+                        (Call (Symbol ">") [Symbol "x", Number 0])
+                        (Symbol "x")
+                        (Call (Symbol "-") [Symbol "x"])
+                    )
+                )
+            )
 
       it "lambda expressions" $ do
         runParser lambda "" "(lambda () 42)" `shouldBe` Right (Lambda [] (Number 42))
-        runParser lambda "" "(lambda (x y) (+  y))"
+        runParser lambda "" "(lambda (x y) (+ x y))"
           `shouldBe` Right (Lambda ["x", "y"] (Call (Symbol "+") [Symbol "x", Symbol "y"]))
 
       it "if expressions" $ do

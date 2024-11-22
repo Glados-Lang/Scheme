@@ -68,6 +68,7 @@ identifier = lexeme $ do
       <|> try (T.unpack <$> chunk "-")
       <|> fmap (: []) (letterChar <|> oneOf (filter (`notElem` ("+-.@0123456789" :: String)) specialChars))
   case first of
+    -- TODO ['...', '+', '-'] can not be followed by a alphanum character, only spaces (\n, \t, ' ')
     "..." -> return "..."
     "->" -> do
       rest <- many (alphaNumChar <|> oneOf specialChars)
@@ -106,12 +107,14 @@ list = List <$> parens (many expr)
 -- (define (add x y) (+ x y))
 -- (define (f x) (if (> x 0) x (- x)))
 -- (define (true) #t)
-defineLambda :: Parser Expr
-defineLambda = do
-  name <- identifier
-  args <- many identifier
+defineExpr :: Parser Expr
+defineExpr = do
+  name <- parens $ do
+    name <- identifier
+    args <- many identifier
+    return $ Lambda args (Symbol name)
   body <- expr
-  return $ Define name (Lambda args body)
+  return $ Define "" (Call name [body])
 
 -- |
 -- define expression with pattern "(define name value)"
@@ -131,7 +134,7 @@ define :: Parser Expr
 define = parens $ do
   _ <- symbol "define"
   choice
-    [ parens defineLambda,
+    [ parens defineExpr,
       defineValue
     ]
 
@@ -155,7 +158,7 @@ ifExpr = parens $ do
 -- | Function calls
 call :: Parser Expr
 call = parens $ do
-  func <- expr
+  func <- symbolExpr
   args <- many expr
   return $ Call func args
 
