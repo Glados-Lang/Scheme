@@ -5,7 +5,7 @@ import Data.Text (Text, pack)
 import SchemeParser (Expr (..), boolean, call, define, ifExpr, lambda, list, number, parseExpr, sc, symbolExpr)
 import Test.Hspec
 import Test.QuickCheck
-import Text.Megaparsec (runParser)
+import Text.Megaparsec
 
 -- For QuickCheck
 instance Arbitrary Expr where
@@ -67,10 +67,18 @@ main = hspec $ do
         runParser define "" "(define x 42)" `shouldBe` Right (Define "x" (Number 42))
 
       it "define with function" $ do
-        runParser define "" "(define (f x) x)"
-          `shouldBe` Right (Define "f" (Lambda ["x"] (Symbol "x")))
-        runParser define "" "(define (f x y) (+ x y))"
-            `shouldBe` Right (Define "f" (Lambda ["x", "y"] (Call (Symbol "+") [Symbol "x", Symbol "y"])))
+        runParser define "" "(define foo 42)" `shouldBe` Right (Define "foo" (Number 42))
+        runParser define "" "(define (add a b) (+ a b))"
+          `shouldBe` Right (Define "add" (Lambda ["a", "b"] (Call (Symbol "+") [Symbol "a", Symbol "b"])))
+        runParser define "" "(define add\n (lambda (x y)\n    (+ x y)))"
+          `shouldBe` Right
+            ( Define
+                "add"
+                ( Lambda
+                    ["x", "y"]
+                    (Call (Symbol "+") [Symbol "x", Symbol "y"])
+                )
+            )
 
       it "lambda expressions" $ do
         runParser lambda "" "(lambda () 42)" `shouldBe` Right (Lambda [] (Number 42))

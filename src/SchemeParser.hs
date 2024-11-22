@@ -98,20 +98,41 @@ symbolExpr = Symbol <$> identifier
 list :: Parser Expr
 list = List <$> parens (many expr)
 
+-- |
+-- define expression with pattern "(define (name args) body)"
+-- where `body` can be any expression
+--
+-- Examples:
+-- (define (add x y) (+ x y))
+-- (define (f x) (if (> x 0) x (- x)))
+-- (define (true) #t)
+defineLambda :: Parser Expr
+defineLambda = do
+  name <- identifier
+  args <- many identifier
+  body <- expr
+  return $ Define name (Lambda args body)
+
+-- |
+-- define expression with pattern "(define name value)"
+-- where `value` can be any expression
+--
+-- Examples:
+-- (define x 42)
+-- (define add (lambda (x y) (+ x y)))
+defineValue :: Parser Expr
+defineValue = do
+  name <- identifier
+  value <- expr
+  return $ Define name value
+
 -- | `define` expressions parsing
 define :: Parser Expr
 define = parens $ do
   _ <- symbol "define"
   choice
-    [ parens $ do
-        name <- identifier
-        args <- many identifier
-        body <- expr
-        return $ Define name (Lambda args body),
-      do
-        name <- identifier
-        value <- expr
-        return $ Define name value
+    [ parens defineLambda,
+      defineValue
     ]
 
 -- | `lambda` expressions parsing
