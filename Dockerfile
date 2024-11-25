@@ -30,6 +30,6 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the binary from the builder stage
-COPY --from=builder /root/.local/bin/glados-exe .
+COPY --from=builder /root/.local/bin/lisp-exe .
 
-ENTRYPOINT ["./glados-exe"]
+ENTRYPOINT ["./lisp-exe"]
