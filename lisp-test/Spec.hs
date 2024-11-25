@@ -47,6 +47,7 @@ main = hspec $ do
         runParser number "" "42" `shouldBe` Right (Number 42)
         runParser number "" "-42" `shouldBe` Right (Number (-42))
         runParser number "" "0" `shouldBe` Right (Number 0)
+        runParser number "" "- 33" `shouldNotBe` Right (Number (-33))
 
       it "boolean parser" $ do
         runParser boolean "" "#t" `shouldBe` Right (Bool True)
@@ -56,6 +57,14 @@ main = hspec $ do
         runParser symbolExpr "" "abc" `shouldBe` Right (Symbol "abc")
         runParser symbolExpr "" "+" `shouldBe` Right (Symbol "+")
         runParser symbolExpr "" "a1" `shouldBe` Right (Symbol "a1")
+        runParser symbolExpr "" "->salut" `shouldBe` Right (Symbol "->salut")
+        runParser symbolExpr "" "." `shouldNotBe` Right (Symbol ".")
+        runParser symbolExpr "" "..." `shouldBe` Right (Symbol "...")
+        runParser symbolExpr "" "...." `shouldNotBe` Right (Symbol "...")
+        runParser symbolExpr "" "@-oui" `shouldBe` Right (Symbol "@-oui")
+        runParser symbolExpr "" "a-b-c" `shouldBe` Right (Symbol "a-b-c")
+        runParser symbolExpr "" "a b c" `shouldBe` Right (Symbol "a")
+        runParser symbolExpr "" "mon_add?" `shouldBe` Right (Symbol "mon_add?")
 
       it "list parser" $ do
         runParser list "" "(1 2 3)" `shouldBe` Right (List [Number 1, Number 2, Number 3])
