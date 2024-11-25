@@ -1,4 +1,4 @@
-name: ci/cd
+name: GLaDOS CI/CD
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner | lower }}/glados-test
 
 jobs:
   build-and-test:
@@ -39,8 +39,8 @@ jobs:
       - name: Build
         run: stack build
 
-    #   - name: Run tests
-    #     run: stack test
+      - name: Run tests
+        run: stack test
 
   docker:
     needs: build-and-test
