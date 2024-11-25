@@ -1,4 +1,4 @@
-name: GLaDOS CI/CD
+name: ci/cd
 
 on:
   push:
@@ -62,8 +62,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/kuawhrime/glados-test:latest
+            ${{ env.REGISTRY }}/kuawhrime/glados-test:${{ github.sha }}
 
   deploy-staging:
     needs: docker
