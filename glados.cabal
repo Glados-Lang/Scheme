@@ -34,6 +34,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , containers
     , megaparsec
     , text
   default-language: Haskell2010
@@ -46,9 +47,11 @@ executable lisp-exe
       Paths_glados
   hs-source-dirs:
       lisp
+      app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , containers
     , glados
     , megaparsec
     , text
@@ -67,8 +70,10 @@ test-suite lisp-test
   build-depends:
       QuickCheck
     , base >=4.7 && <5
+    , containers
     , glados
     , hspec
+    , hspec-discover
     , megaparsec
     , text
   default-language: Haskell2010
