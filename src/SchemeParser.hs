@@ -18,13 +18,13 @@ module SchemeParser
   )
 where
 
+import Data.Char (isSpace)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-import Data.Char (isSpace)
 
 data Expr
   = Number Integer
@@ -115,12 +115,12 @@ list = List <$> parens (many expr)
 -- (define (true) #t)
 defineExpr :: Parser Expr
 defineExpr = do
-  name <- parens $ do
+  (name, args) <- parens $ do
     name <- identifier
     args <- many identifier
-    return $ Lambda args (Symbol name)
+    return (name, args)
   body <- expr
-  return $ Define "" (Call name [body])
+  return $ Define name (Lambda args body)
 
 -- |
 -- define expression with pattern "(define name value)"
@@ -129,6 +129,7 @@ defineExpr = do
 -- Examples:
 -- (define x 42)
 -- (define add (lambda (x y) (+ x y)))
+-- (define yes (lambda () #t))
 defineValue :: Parser Expr
 defineValue = do
   name <- identifier
@@ -140,7 +141,7 @@ define :: Parser Expr
 define = parens $ do
   _ <- symbol "define"
   choice
-    [ parens defineExpr,
+    [ defineExpr,
       defineValue
     ]
 
