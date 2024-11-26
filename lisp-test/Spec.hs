@@ -77,17 +77,10 @@ main = hspec $ do
 
       it "define with function" $ do
         runParser define "" "(define foo 42)" `shouldBe` Right (Define "foo" (Number 42))
+        runParser define "" "(define add\n (lambda (x y)\n    (+ x y)))"
+          `shouldBe` Right (Define "add" (Lambda ["x", "y"] (Call (Symbol "+") [Symbol "x", Symbol "y"])))
         runParser define "" "(define (add a b) (+ a b))"
           `shouldBe` Right (Define "add" (Lambda ["a", "b"] (Call (Symbol "+") [Symbol "a", Symbol "b"])))
-        runParser define "" "(define add\n (lambda (x y)\n    (+ x y)))"
-          `shouldBe` Right
-            ( Define
-                "add"
-                ( Lambda
-                    ["x", "y"]
-                    (Call (Symbol "+") [Symbol "x", Symbol "y"])
-                )
-            )
         runParser define "" "(define (f x) (if (> x 0) x (- x)))"
           `shouldBe` Right
             ( Define
@@ -101,6 +94,7 @@ main = hspec $ do
                     )
                 )
             )
+        runParser define "" "(define (true) #t)" `shouldBe` Right (Define "true" (Lambda [] (Bool True)))
 
       it "lambda expressions" $ do
         runParser lambda "" "(lambda () 42)" `shouldBe` Right (Lambda [] (Number 42))
