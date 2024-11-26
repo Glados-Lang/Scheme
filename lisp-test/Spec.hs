@@ -29,7 +29,7 @@ instance Arbitrary Expr where
             genCall (n - 1)
           ]
 
-      genSymbol = elements ["x", "y", "z", "+", "-", "*", "/"]
+      genSymbol = elements $ map (: []) "abcdefghijklmnopqrstuvwxyz*/+-" ++ ["->", "=>", "<=", ">=", "map", "add", "copy"]
       genDefine n = Define <$> genSymbol <*> exprGen n
       genLambda n = Lambda <$> listOf genSymbol <*> exprGen n
       genIf n = If <$> exprGen n <*> exprGen n <*> exprGen n
@@ -114,8 +114,38 @@ main = hspec $ do
 
     describe "Integration Tests" $ do
       it "handles nested expressions" $ do
-        parseExpr "((lambda (x) x) 42)"
-          `shouldBe` Right (Call (Lambda ["x"] (Symbol "x")) [Number 42])
+        parseExpr "(define (add x y) (+ x y))"
+          `shouldBe` Right
+            ( Define
+                "add"
+                ( Lambda
+                    ["x", "y"]
+                    ( Call
+                        (Symbol "+")
+                        [Symbol "x", Symbol "y"]
+                    )
+                )
+            )
+        parseExpr "(define (matrix_add m1 m2) (map (lambda (a b) (map + a b)) m1 m2))"
+          `shouldBe` Right
+            ( Define
+                "matrix_add"
+                ( Lambda
+                    ["m1", "m2"]
+                    ( Call
+                        (Symbol "map")
+                        [ Lambda
+                            ["a", "b"]
+                            ( Call
+                                (Symbol "map")
+                                [Symbol "+", Symbol "a", Symbol "b"]
+                            ),
+                          Symbol "m1",
+                          Symbol "m2"
+                        ]
+                    )
+                )
+            )
 
       it "handles complex define with nested lambda" $ do
         parseExpr "(define compose (lambda (f g) (lambda (x) (f (g x)))))"
