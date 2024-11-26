@@ -15,16 +15,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Install GHCup and Haskell
+    
+      - name: Install GHC and Debug Logs
         run: |
-          sudo apt-get install build-essential libgmp-dev libffi-dev
           curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
           source ~/.ghcup/env
           ghcup install ghc 9.6.6
           ghcup set ghc 9.6.6
           ghcup install stack 3.1.1
           ghcup set stack 3.1.1
+          # Check logs if the error persists
+          cat ~/.ghcup/logs/* || true
+
+      - name: Update GHCup
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+          source ~/.ghcup/env
+          ghcup upgrade
+      
+      - name: Clean GHCup Cache
+        run: rm -rf ~/.ghcup/cache
 
       - name: Cache Stack dependencies
         uses: actions/cache@v3
