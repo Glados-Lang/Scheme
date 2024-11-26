@@ -18,6 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
+      - name: Install dependencies
+        run: stack --stack-root /tmp/stack_root build --only-dependencies
+
+
       - name: Cache Stack dependencies
         uses: actions/cache@v3
         with:
