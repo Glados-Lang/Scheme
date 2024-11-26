@@ -18,6 +18,7 @@ module SchemeParser
   )
 where
 
+import Data.Char (isSpace)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
@@ -68,13 +69,13 @@ identifier = lexeme $ do
       <|> try (T.unpack <$> chunk "-")
       <|> fmap (: []) (letterChar <|> oneOf (filter (`notElem` ("+-.@0123456789" :: String)) specialChars))
   case first of
-    -- TODO ['...', '+', '-'] can not be followed by a alphanum character, only spaces (\n, \t, ' ')
-    "..." -> return "..."
+    "..." ->
+      notFollowedBy (satisfy (not . isSpace)) >> return "..."
     "->" -> do
       rest <- many (alphaNumChar <|> oneOf specialChars)
       return ("->" ++ rest)
-    "+" -> return "+"
-    "-" -> return "-"
+    "+" -> notFollowedBy alphaNumChar >> return "+"
+    "-" -> notFollowedBy alphaNumChar >> return "-"
     x -> do
       rest <- many (alphaNumChar <|> oneOf specialChars)
       return (x ++ rest)
@@ -85,7 +86,12 @@ lexeme = L.lexeme sc
 
 -- | number parser
 number :: Parser Expr
-number = Number <$> lexeme (L.signed sc L.decimal)
+number = lexeme $ do
+  sign <- optional (char '-')
+  num <- L.decimal
+  return $ Number $ case sign of
+    Just _ -> -num
+    Nothing -> num
 
 -- | bool parser
 boolean :: Parser Expr
@@ -109,12 +115,12 @@ list = List <$> parens (many expr)
 -- (define (true) #t)
 defineExpr :: Parser Expr
 defineExpr = do
-  name <- parens $ do
+  (name, args) <- parens $ do
     name <- identifier
     args <- many identifier
-    return $ Lambda args (Symbol name)
+    return (name, args)
   body <- expr
-  return $ Define "" (Call name [body])
+  return $ Define name (Lambda args body)
 
 -- |
 -- define expression with pattern "(define name value)"
@@ -123,6 +129,7 @@ defineExpr = do
 -- Examples:
 -- (define x 42)
 -- (define add (lambda (x y) (+ x y)))
+-- (define yes (lambda () #t))
 defineValue :: Parser Expr
 defineValue = do
   name <- identifier
@@ -134,7 +141,7 @@ define :: Parser Expr
 define = parens $ do
   _ <- symbol "define"
   choice
-    [ parens defineExpr,
+    [ defineExpr,
       defineValue
     ]
 
