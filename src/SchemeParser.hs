@@ -85,7 +85,12 @@ lexeme = L.lexeme sc
 
 -- | number parser
 number :: Parser Expr
-number = Number <$> lexeme (L.signed sc L.decimal)
+number = lexeme $ do
+sign <- optional (char '-')
+  num <- L.decimal
+  return $ Number $ case sign of
+    Just _ -> -num
+    Nothing -> num
 
 -- | bool parser
 boolean :: Parser Expr
