@@ -209,7 +209,11 @@ main = hspec $ do
       it "property: can parse any generated Expr" $ property $ \expr ->
         let rendered = renderExpr expr
             parsed = parseExpr rendered
-         in parsed == Right expr
+         in do
+              case parsed of
+                Right parsedExpr -> rendered `shouldBe` renderExpr parsedExpr
+                Left err -> expectationFailure $ show err
+              parsed `shouldBe` Right expr
 
 -- Helper func
 renderExpr :: Expr -> Text
@@ -221,11 +225,13 @@ renderExpr expr = case expr of
   List es -> "(" <> renderExprs es <> ")"
   Define name value -> "(define " <> pack name <> " " <> renderExpr value <> ")"
   Lambda params body ->
-    "(lambda (" <> pack (unwords params) <> ") " <> renderExpr body <> ")"
+    "(lambda (" <> pack (unwords params) <> ")" <> renderExpr body <> ")"
   If cond t f ->
     "(if " <> renderExpr cond <> " " <> renderExpr t <> " " <> renderExpr f <> ")"
   Call func args ->
     "(" <> renderExpr func <> " " <> renderExprs args <> ")"
 
 renderExprs :: [Expr] -> Text
-renderExprs exprs = pack $ unwords $ map (show . renderExpr) exprs
+renderExprs [] = ""
+renderExprs [x] = renderExpr x
+renderExprs (x : xs) = renderExpr x <> (if null xs then "" else " " <> renderExprs xs)
