@@ -1,4 +1,4 @@
-name: Make Release
+name: Release glados
 
 on:
   push:
@@ -12,16 +12,20 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Set up GHC
-        uses: haskell-actions/setup@v2
-        with:
-          ghc-version: '9.6.6'
-          enable-stack: true
-          stack-version: 'latest'
+
+      - name: Install GHCup and Haskell
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+          source ~/.ghcup/env
+          ghcup install ghc 9.6.6
+          ghcup set ghc 9.6.6
+          ghcup install stack 3.1.1
+          ghcup set stack 3.1.1
 
       - name: Build
-        run: stack build
+        run: |
+          source ~/.ghcup/env
+          stack build
 
       - name: Package Binary
         run: |
@@ -29,21 +33,28 @@ jobs:
           cp $(stack path --local-install-root)/bin/lisp-exe release/glados
           tar czf glados-${{ github.ref_name }}.tar.gz release/
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - uses: marvinpinto/action-automatic-releases@latest
         with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: false
           files: |
             glados-${{ github.ref_name }}.tar.gz
-          body: |
-            GLaDOS Release ${{ github.ref_name }}
-            
-            ## What's Changed
-            * LISP Interpreter
-            * Docker Support
-            * Automatic Tests
-            
-            ## How to Install
-            ```bash
-            tar xzf glados-${{ github.ref_name }}.tar.gz
-            ./release/glados
-            ```
+
+  # - name: Create Release
+  # uses: softprops/action-gh-release@v1
+  # with:
+  #   files: |
+  #     glados-${{ github.ref_name }}.tar.gz
+  #   body: |
+  #     GLaDOS Release ${{ github.ref_name }}
+      
+  #     ## What's Changed
+  #     * LISP Interpreter
+  #     * Docker Support
+  #     * Automatic Tests
+      
+  #     ## How to Install
+  #     ```bash
+  #     tar xzf glados-${{ github.ref_name }}.tar.gz
+  #     ./release/glados
+  #     ```

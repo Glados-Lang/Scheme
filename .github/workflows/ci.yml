@@ -16,12 +16,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Set up GHC
-        uses: haskell-actions/setup@v2
-        with:
-          ghc-version: '9.6.6'
-          enable-stack: true
-          stack-version: 'latest'
+      - name: Install GHCup and Haskell
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+          source ~/.ghcup/env
+          ghcup install ghc 9.6.6
+          ghcup set ghc 9.6.6
+          ghcup install stack 3.1.1
+          ghcup set stack 3.1.1
 
       - name: Cache Stack dependencies
         uses: actions/cache@v3
@@ -34,13 +36,19 @@ jobs:
             ${{ runner.os }}-stack-
 
       - name: Install dependencies
-        run: stack build --only-dependencies
+        run: |
+          source ~/.ghcup/env
+          stack build --only-dependencies
 
       - name: Build
-        run: stack build
+        run: |
+          source ~/.ghcup/env
+          stack build
 
       - name: Run tests
-        run: stack test
+        run: |
+          source ~/.ghcup/env
+          stack test
 
   docker:
     needs: build-and-test
@@ -50,20 +58,14 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
       - name: Build and push Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
   deploy-staging:
     needs: docker
