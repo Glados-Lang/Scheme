@@ -13,29 +13,11 @@ env:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    container:
+      image: haskell:9.6.6
     steps:
       - uses: actions/checkout@v3
-    
-      - name: Install GHC and Debug Logs
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
-          source ~/.ghcup/env
-          ghcup install ghc 9.6.6
-          ghcup set ghc 9.6.6
-          ghcup install stack 3.1.1
-          ghcup set stack 3.1.1
-          # Check logs if the error persists
-          cat ~/.ghcup/logs/* || true
-
-      - name: Update GHCup
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
-          source ~/.ghcup/env
-          ghcup upgrade
       
-      - name: Clean GHCup Cache
-        run: rm -rf ~/.ghcup/cache
-
       - name: Cache Stack dependencies
         uses: actions/cache@v3
         with:
@@ -47,19 +29,13 @@ jobs:
             ${{ runner.os }}-stack-
 
       - name: Install dependencies
-        run: |
-          source ~/.ghcup/env
-          stack build --only-dependencies
+        run: stack build --only-dependencies
 
       - name: Build
-        run: |
-          source ~/.ghcup/env
-          stack build
+        run: stack build
 
       - name: Run tests
-        run: |
-          source ~/.ghcup/env
-          stack test
+        run: stack test
 
   docker:
     needs: build-and-test
