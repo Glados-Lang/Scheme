@@ -72,7 +72,7 @@ False
 
 -}
 
-data Result e a = Ok a | Err e
+data Result e a = Ok !a | Err !e
   deriving (Ord, Read, Show)
 
 instance Functor (Result e) where
