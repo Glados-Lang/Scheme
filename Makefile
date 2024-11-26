@@ -25,7 +25,6 @@ install:
 	./scripts/config_ghcup.sh
 
 tests:
-	stack test
-	python3 functionnal-tests/ftests.py
+	stack test ; python3 functionnal-tests/ftests.py
 
 .PHONY: all clean fclean re
