@@ -1,0 +1,60 @@
+name: Release glados
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install GHCup and Haskell
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+          source ~/.ghcup/env
+          ghcup install ghc 9.6.6
+          ghcup set ghc 9.6.6
+          ghcup install stack 3.1.1
+          ghcup set stack 3.1.1
+
+      - name: Build
+        run: |
+          source ~/.ghcup/env
+          stack build
+
+      - name: Package Binary
+        run: |
+          mkdir -p release/
+          cp $(stack path --local-install-root)/bin/lisp-exe release/glados
+          tar czf glados-${{ github.ref_name }}.tar.gz release/
+
+      - uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: false
+          files: |
+            glados-${{ github.ref_name }}.tar.gz
+
+  # - name: Create Release
+  # uses: softprops/action-gh-release@v1
+  # with:
+  #   files: |
+  #     glados-${{ github.ref_name }}.tar.gz
+  #   body: |
+  #     GLaDOS Release ${{ github.ref_name }}
+      
+  #     ## What's Changed
+  #     * LISP Interpreter
+  #     * Docker Support
+  #     * Automatic Tests
+      
+  #     ## How to Install
+  #     ```bash
+  #     tar xzf glados-${{ github.ref_name }}.tar.gz
+  #     ./release/glados
+  #     ```
