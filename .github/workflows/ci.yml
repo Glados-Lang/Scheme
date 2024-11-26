@@ -39,8 +39,8 @@ jobs:
       - name: Build
         run: stack build
 
-    #   - name: Run tests
-    #     run: stack test
+      - name: Run tests
+        run: stack test
 
   docker:
     needs: build-and-test
