@@ -38,6 +38,7 @@ library:
   source-dirs: src
   dependencies:
   - megaparsec
+  - containers
 
 executables:
   lisp-exe:
@@ -50,11 +51,12 @@ executables:
     dependencies:
     - glados
     - text
+    - containers
 
 
 tests:
   lisp-test:
-    main:                Spec.hs
+    main:                Main.hs
     source-dirs:         lisp-test
     ghc-options:
     - -threaded
@@ -66,3 +68,4 @@ tests:
     - hspec
     - megaparsec
     - text
+    - containers

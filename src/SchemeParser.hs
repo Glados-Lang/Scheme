@@ -6,6 +6,7 @@
 module SchemeParser
   ( Expr (..),
     parseExpr,
+    expr,
     sc,
     boolean,
     call,
