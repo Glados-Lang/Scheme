@@ -24,6 +24,7 @@ import Data.Void (Void)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+import Data.Char (isSpace)
 
 data Expr
   = Number Integer
@@ -68,13 +69,13 @@ identifier = lexeme $ do
       <|> try (T.unpack <$> chunk "-")
       <|> fmap (: []) (letterChar <|> oneOf (filter (`notElem` ("+-.@0123456789" :: String)) specialChars))
   case first of
-    -- TODO ['...', '+', '-'] can not be followed by a alphanum character, only spaces (\n, \t, ' ')
-    "..." -> return "..."
+    "..." ->
+      notFollowedBy (satisfy (not . isSpace)) >> return "..."
     "->" -> do
       rest <- many (alphaNumChar <|> oneOf specialChars)
       return ("->" ++ rest)
-    "+" -> return "+"
-    "-" -> return "-"
+    "+" -> notFollowedBy alphaNumChar >> return "+"
+    "-" -> notFollowedBy alphaNumChar >> return "-"
     x -> do
       rest <- many (alphaNumChar <|> oneOf specialChars)
       return (x ++ rest)
@@ -86,7 +87,7 @@ lexeme = L.lexeme sc
 -- | number parser
 number :: Parser Expr
 number = lexeme $ do
-sign <- optional (char '-')
+  sign <- optional (char '-')
   num <- L.decimal
   return $ Number $ case sign of
     Just _ -> -num
