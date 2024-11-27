@@ -3,7 +3,7 @@
 -- suggestion from hlint
 {-# LANGUAGE StrictData #-}
 
-module SchemeParser
+module Data.SchemeParser
   ( Expr (..),
     parseExpr,
     expr,
@@ -125,7 +125,7 @@ defineExpr = do
 
 -- |
 -- define expression with pattern "(define name value)"
--- where `value` can be any expression
+-- where `value` can be any expressiwon
 --
 -- Examples:
 -- (define x 42)

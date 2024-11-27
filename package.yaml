@@ -42,10 +42,9 @@ library:
   - containers
 
 executables:
-  lisp-exe:
+  scheme:
     main:                Main.hs
     source-dirs:
-    - lisp
     - app
     ghc-options:
     - -threaded
@@ -58,9 +57,9 @@ executables:
 
 
 tests:
-  lisp-test:
+  test:
     main:                Main.hs
-    source-dirs:         lisp-test
+    source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts

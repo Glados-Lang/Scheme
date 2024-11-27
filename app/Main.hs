@@ -3,8 +3,8 @@ module Main
   ( main
   ) where
 
-import SchemeParser (Expr, expr)
-import Evaluator (evalExpr, Value(..), Env)
+import Data.SchemeParser (Expr, expr)
+import Data.Evaluator (evalExpr, Value(..), Env)
 import Data.Result (Result(..))
 import qualified Data.Text.IO as TIO
 import qualified Data.Map as Map

@@ -24,9 +24,9 @@ source-repository head
 library
   exposed-modules:
       Control.Convert
+      Data.Evaluator
       Data.Result
-      Evaluator
-      SchemeParser
+      Data.SchemeParser
   other-modules:
       Paths_glados
   autogen-modules:
@@ -41,14 +41,13 @@ library
     , text
   default-language: Haskell2010
 
-executable lisp-exe
+executable scheme
   main-is: Main.hs
   other-modules:
       Paths_glados
   autogen-modules:
       Paths_glados
   hs-source-dirs:
-      lisp
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
@@ -59,7 +58,7 @@ executable lisp-exe
     , text
   default-language: Haskell2010
 
-test-suite lisp-test
+test-suite test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
@@ -69,7 +68,7 @@ test-suite lisp-test
   autogen-modules:
       Paths_glados
   hs-source-dirs:
-      lisp-test
+      test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck

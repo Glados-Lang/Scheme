@@ -2,7 +2,7 @@ cradle:
   stack:
     - path: "./src"
       component: "glados:lib"
-    - path: "./lisp"
-      component: "glados:exe:lisp-exe"
-    - path: "./lisp-test"
-      component: "glados:test:lisp-test"
+    - path: "./app"
+      component: "glados:exe:scheme"
+    - path: "./test"
+      component: "glados:test:test"

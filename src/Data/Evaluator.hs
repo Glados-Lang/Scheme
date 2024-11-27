@@ -1,11 +1,11 @@
 -- Evaluator.hs
-module Evaluator
+module Data.Evaluator
   ( evalExpr,
     Value(..),
     Env
   ) where
 
-import SchemeParser
+import Data.SchemeParser (Expr(..))
 import Data.Result
 import qualified Data.Map as Map
 
