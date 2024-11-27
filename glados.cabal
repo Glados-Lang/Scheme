@@ -24,6 +24,7 @@ source-repository head
 library
   exposed-modules:
       Data.Result
+      Evaluator
       SchemeParser
   other-modules:
       Paths_glados
@@ -59,8 +60,10 @@ executable lisp-exe
 
 test-suite lisp-test
   type: exitcode-stdio-1.0
-  main-is: Spec.hs
+  main-is: Main.hs
   other-modules:
+      EvaluatorSpec
+      ParserSpec
       Paths_glados
   autogen-modules:
       Paths_glados

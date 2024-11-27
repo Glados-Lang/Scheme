@@ -1,11 +1,15 @@
+-- test/ParserSpec.hs
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+
+module ParserSpec (main, spec) where
 
 import Data.Text (Text, pack)
 import SchemeParser (Expr (..), boolean, call, define, ifExpr, lambda, list, number, parseExpr, sc, symbolExpr)
 import Test.Hspec
 import Test.QuickCheck
 import Text.Megaparsec
+import qualified Data.Text as T
 
 -- For QuickCheck
 instance Arbitrary Expr where
@@ -36,7 +40,10 @@ instance Arbitrary Expr where
       genCall n = Call <$> exprGen n <*> listOf (exprGen n)
 
 main :: IO ()
-main = hspec $ do
+main = hspec spec
+
+spec :: Spec
+spec = do
   describe "SchemeParser" $ do
     describe "Basic Parsers" $ do
       it "sc handles various whitespace and comments" $ do
