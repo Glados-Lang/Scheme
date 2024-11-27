@@ -1,4 +1,4 @@
-name: CI/CD
+name: GLaDOS CI
 
 on:
   push:
@@ -7,131 +7,54 @@ on:
     branches: [ "main" ]
 
 jobs:
-  setup:
+  setup-and-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Cache Stack
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.stack
-          .stack-work
-        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-stack-
-    
-    - name: Install System Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential curl libffi-dev libgmp-dev libncurses-dev
-    
-    - name: Setup GHCup & Haskell
-      shell: bash
-      run: |
-        GHCUP_USE_XDG_DIRS=1
-        export BOOTSTRAP_HASKELL_NONINTERACTIVE=1
-        export BOOTSTRAP_HASKELL_GHC_VERSION=9.6.6
-        export BOOTSTRAP_HASKELL_INSTALL_STACK=1
-        curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | bash
-        echo "$HOME/.ghcup/bin" >> $GITHUB_PATH
-        echo "GHCUP_INSTALL_BASE_PREFIX=$HOME" >> $GITHUB_ENV
-        
-    - name: Configure Tools
-      run: |
-        ghcup install ghc 9.6.6 --set
-        ghcup install stack 3.1.1 --set
-        stack setup
-        
-    - name: Save GHCup to cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.ghcup
-        key: ${{ runner.os }}-ghcup-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
+      - uses: actions/checkout@v4
+      
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.6.6'
+          cabal-version: '3.10.3.0'
+          stack-version: '3.1.1'
+          
+      - name: Cache Stack
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.stack
+            .stack-work
+          key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-
 
-  test:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Restore Caches
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.stack
-          .stack-work
-          ~/.ghcup
-        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
-    
-    - name: Setup GHCup & Haskell
-      shell: bash
-      run: |
-        GHCUP_USE_XDG_DIRS=1
-        export BOOTSTRAP_HASKELL_NONINTERACTIVE=1
-        curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | bash
-        echo "$HOME/.ghcup/bin" >> $GITHUB_PATH
+      - name: Install dependencies
+        run: |
+          stack build --only-dependencies
+          
+      - name: Run tests
+        run: stack test
         
-    - name: Run Tests
-      run: stack test
-        
-    - name: Run HLint
-      run: |
-        curl -sSL https://github.com/ndmitchell/hlint/releases/download/v3.5/hlint-3.5-x86_64-linux.tar.gz | tar -xz
-        ./hlint-3.5/hlint src/ lisp/ lisp-test/
-
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Restore Caches
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.stack
-          .stack-work
-          ~/.ghcup
-        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
-    
-    - name: Setup GHCup & Haskell
-      shell: bash
-      run: |
-        GHCUP_USE_XDG_DIRS=1
-        export BOOTSTRAP_HASKELL_NONINTERACTIVE=1
-        curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | bash
-        echo "$HOME/.ghcup/bin" >> $GITHUB_PATH
-    
-    - name: Build Project
-      run: stack build
-        
-    - name: Create Symlink
-      run: |
-        ln -s .stack-work/dist/x86_64-linux/ghc-9.6.6/build/lisp-exe/lisp-exe run-lisp
-        chmod +x run-lisp
-    
-    - name: Upload Build Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: glados-executable
-        path: run-lisp
-
-  integration-test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Download Build Artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: glados-executable
-        
-    - name: Run Integration Tests
-      run: |
-        chmod +x run-lisp
-        echo "(+ 1 2)" | ./run-lisp
-        echo "(define x 42) x" | ./run-lisp
+      - name: Run HLint
+        run: |
+          curl -sSL https://github.com/ndmitchell/hlint/releases/download/v3.5/hlint-3.5-x86_64-linux.tar.gz | tar -xz
+          ./hlint-3.5/hlint src/ lisp/ lisp-test/
+          
+      - name: Build
+        run: stack build
+          
+      - name: Create Executable
+        run: |
+          ln -s .stack-work/dist/x86_64-linux/ghc-9.6.6/build/lisp-exe/lisp-exe run-lisp
+          chmod +x run-lisp
+          
+      - name: Run Integration Tests
+        run: |
+          echo "(+ 1 2)" | ./run-lisp
+          echo "(define x 42) x" | ./run-lisp
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: glados-executable
+          path: run-lisp
