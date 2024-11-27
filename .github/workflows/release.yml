@@ -1,51 +1,50 @@
-name: Release
+name: GLaDOS Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [created]
 
 jobs:
-  create-release:
+  build-release:
     runs-on: ubuntu-latest
-    container:
-      image: haskell:9.6.6
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Build
-        run: stack build
-
-      - name: Package Binary
-        run: |
-          mkdir -p release/
-          cp $(stack path --local-install-root)/bin/lisp-exe release/glados
-          tar czf glados-${{ github.ref_name }}.tar.gz release/
-
-      - uses: marvinpinto/action-automatic-releases@latest
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: false
-          files: |
-            glados-${{ github.ref_name }}.tar.gz
-
-  # - name: Create Release
-  # uses: softprops/action-gh-release@v1
-  # with:
-  #   files: |
-  #     glados-${{ github.ref_name }}.tar.gz
-  #   body: |
-  #     GLaDOS Release ${{ github.ref_name }}
-      
-  #     ## What's Changed
-  #     * LISP Interpreter
-  #     * Docker Support
-  #     * Automatic Tests
-      
-  #     ## How to Install
-  #     ```bash
-  #     tar xzf glados-${{ github.ref_name }}.tar.gz
-  #     ./release/glados
-  #     ```
+    - uses: actions/checkout@v4
+    
+    - name: Cache Stack
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.stack
+          .stack-work
+        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
+    
+    - name: Install System Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential curl libffi-dev libgmp-dev libncurses-dev
+    
+    - name: Setup GHCup and Build Tools
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+        source ~/.ghcup/env
+        ghcup install ghc 9.6.6
+        ghcup set ghc 9.6.6
+        ghcup install stack 3.1.1
+        ghcup set stack 3.1.1
+        stack setup
+        
+    - name: Build Release
+      run: |
+        source ~/.ghcup/env
+        stack build
+        ln -s .stack-work/dist/x86_64-linux/ghc-9.6.6/build/lisp-exe/lisp-exe glados
+        chmod +x glados
+        
+    - name: Create Release Archive
+      run: |
+        tar -czf glados-${{ github.event.release.tag_name }}.tar.gz glados
+        
+    - name: Upload Release Asset
+      uses: softprops/action-gh-release@v1
+      with:
+        files: glados-${{ github.event.release.tag_name }}.tar.gz

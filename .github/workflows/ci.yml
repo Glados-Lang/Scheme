@@ -2,76 +2,111 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: kuawhrime/glados-test
+    branches: [ "main" ]
 
 jobs:
-  build-and-test:
+  setup:
     runs-on: ubuntu-latest
-    container:
-      image: haskell:9.6.6
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Install dependencies
-        run: stack --stack-root /tmp/stack_root build --only-dependencies
+    - uses: actions/checkout@v4
+    
+    - name: Cache Stack
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.stack
+          .stack-work
+        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-stack-
+    
+    - name: Install System Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential curl libffi-dev libgmp-dev libncurses-dev
+    
+    - name: Setup GHCup
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+        source ~/.ghcup/env
+        
+    - name: Setup Haskell Tools
+      run: |
+        ghcup install ghc 9.6.6
+        ghcup set ghc 9.6.6
+        ghcup install stack 3.1.1
+        ghcup set stack 3.1.1
+        stack setup
 
-
-      - name: Cache Stack dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.stack
-            .stack-work
-          key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-stack-
-
-      - name: Install dependencies
-        run: stack build --only-dependencies
-
-      - name: Build
-        run: stack build
-
-      - name: Run tests
-        run: stack test
-
-  docker:
-    needs: build-and-test
+  test:
+    needs: setup
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          
-      - name: Build and push Docker image
-        run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+    - uses: actions/checkout@v4
+    
+    - name: Restore Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.stack
+          .stack-work
+        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
+    
+    - name: Run Tests
+      run: |
+        source ~/.ghcup/env
+        stack test
+        
+    - name: Run HLint
+      run: |
+        curl -sSL https://github.com/ndmitchell/hlint/releases/download/v3.5/hlint-3.5-x86_64-linux.tar.gz | tar -xz
+        ./hlint-3.5/hlint src/ lisp/ lisp-test/
 
-  deploy-staging:
-    needs: docker
+  build:
+    needs: test
     runs-on: ubuntu-latest
-    environment: staging
-    if: github.ref == 'refs/heads/main'
     steps:
-      - name: Deploy to staging
-        run: echo "Deploying to staging..."
+    - uses: actions/checkout@v4
+    
+    - name: Restore Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.stack
+          .stack-work
+        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
+    
+    - name: Build Project
+      run: |
+        source ~/.ghcup/env
+        stack build
+        
+    - name: Create Symlink
+      run: |
+        ln -s .stack-work/dist/x86_64-linux/ghc-9.6.6/build/lisp-exe/lisp-exe run-lisp
+        chmod +x run-lisp
+    
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: glados-executable
+        path: run-lisp
 
-  deploy-production:
-    needs: deploy-staging
+  integration-test:
+    needs: build
     runs-on: ubuntu-latest
-    environment: production
-    if: github.ref == 'refs/heads/main'
     steps:
-      - name: Deploy to production
-        run: echo "Deploying to production..."
+    - uses: actions/checkout@v4
+    
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: glados-executable
+        
+    - name: Run Integration Tests
+      run: |
+        chmod +x run-lisp
+        echo "(+ 1 2)" | ./run-lisp
+        echo "(define x 42) x" | ./run-lisp
