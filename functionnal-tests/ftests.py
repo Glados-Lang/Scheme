@@ -64,6 +64,21 @@ test_categories = {
                 "content": "#t",
                 "expected": "#t\n"
             },
+            {
+                "name": "file comment",
+                "content": "(define (** x) (* x x))\n; Now lets use it\n\n(** 5)",
+                "expected": "25"
+            },
+            {
+                "name": "file comments",
+                "content": "(define (add-two-numbers a b)\n; This function takes two parameters: a and b\n(+ a b))\n; It returns the sum of a and b\n; Hopefully it was easy to follow\n; Now we'll do something even more complicated\n; Test it\n(add-two-numbers 1 2)",
+                "expected": "3"
+            },
+            {
+                "name": "header comment",
+                "content": "; A nice comment at the begining of the file, surely nothing will go wrong\n(define (** x) (* x x))\n(** 5)",
+                "expected": "25"
+            },
         ],
         "Advanced Parsers": [
             {
