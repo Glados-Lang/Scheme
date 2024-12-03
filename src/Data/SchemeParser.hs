@@ -172,7 +172,7 @@ call = parens $ do
 
 expr :: Parser Expr
 expr =
-  choice
+  sc *> choice
     [ try define,
       try lambda,
       try ifExpr,
