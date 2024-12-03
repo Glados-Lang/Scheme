@@ -4,8 +4,8 @@
 
 module EvaluatorSpec (main, spec) where
 
-import Evaluator
-import SchemeParser (Expr (..))
+import Data.Evaluator
+import Data.SchemeParser (Expr (..))
 import Data.Result
 import qualified Data.Map as Map
 import Test.Hspec
