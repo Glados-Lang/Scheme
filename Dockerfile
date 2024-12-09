@@ -32,4 +32,4 @@ RUN apt-get update && \
 # Copy the binary from the builder stage
 COPY --from=builder /root/.local/bin/lisp-exe .
 
-ENTRYPOINT ["./lisp-exe"]
+ENTRYPOINT ["./run-lisp"]
